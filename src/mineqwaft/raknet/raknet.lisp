@@ -34,12 +34,14 @@
   (make-array *max-buffer-size* :element-type '(unsigned-byte 8) :initial-element 0))
 
 (defun process-packet (socket buffer size src-host src-port)
-  (print (format t "Got packet from ~A on port ~A containing ~A bytes" src-host src-port size)))
+  (let ((packet (make-array size :element-type '(unsigned-byte 8) :displaced-to buffer)))
+       (print (format t "Got packet from ~A on port ~A containing ~A bytes: ~A" src-host src-port size packet))))
 
 (defun server (socket)
   (multiple-value-bind (buffer size host port)
       (usocket:socket-receive socket *receive-buffer* *max-buffer-size*)
     (process-packet socket buffer size host port))
+
   (server socket))
 
 (defun serve (interface port)

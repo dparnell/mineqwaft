@@ -25,23 +25,18 @@
 
 (in-package :raknet)
 
-(defparameter *max-buffer-size* usocket:+max-datagram-packet-size+)
+(defun unknown-packet (src-host src-port packet)
+  (print (format t "Got unknown packet from ~A on port ~A of type ~A bytes: ~A" src-host src-port (aref packet 0) packet)))
 
-(defvar *receive-buffer*
-  (make-array *max-buffer-size* :element-type '(unsigned-byte 8) :initial-element 0))
+;; an array of functions for handling packets
+(defvar *packet-handlers*
+  (make-array 256 :initial-element 'unknown-packet))
 
-(defun process-packet (socket buffer size src-host src-port)
-  (let ((packet (make-array size :element-type '(unsigned-byte 8) :displaced-to buffer)))
-    (handle-packet src-host src-port packet)))
+(defun handle-packet (src-host src-port packet)
+  (funcall (aref *packet-handlers* (aref packet 0)) src-host src-port packet))
 
-(defun server (socket)
-  (multiple-value-bind (buffer size host port)
-      (usocket:socket-receive socket *receive-buffer* *max-buffer-size*)
-    (process-packet socket buffer size host port))
+(defparameter +magic+
+  #(#x00 #xff #xff #x00 #xfe #xfe #xfe #xfe #xfd #xfd #xfd #xfd #x12 #x34 #x56 #x78))
 
-  (server socket))
-
-(defun serve (interface port)
-  (server (usocket:socket-connect nil nil :protocol :datagram
-                                  :local-host interface
-                                  :local-port port)))
+(defparameter +server-id+
+  #(#x00 #x00 #x00 #x00 #x37 #x2c #xdc #x9e))

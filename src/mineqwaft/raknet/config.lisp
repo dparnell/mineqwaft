@@ -25,23 +25,4 @@
 
 (in-package :raknet)
 
-(defparameter *max-buffer-size* usocket:+max-datagram-packet-size+)
-
-(defvar *receive-buffer*
-  (make-array *max-buffer-size* :element-type '(unsigned-byte 8) :initial-element 0))
-
-(defun process-packet (socket buffer size src-host src-port)
-  (let ((packet (make-array size :element-type '(unsigned-byte 8) :displaced-to buffer)))
-    (handle-packet src-host src-port packet)))
-
-(defun server (socket)
-  (multiple-value-bind (buffer size host port)
-      (usocket:socket-receive socket *receive-buffer* *max-buffer-size*)
-    (process-packet socket buffer size host port))
-
-  (server socket))
-
-(defun serve (interface port)
-  (server (usocket:socket-connect nil nil :protocol :datagram
-                                  :local-host interface
-                                  :local-port port)))
+(defvar *server-name* "Mineqwaft - A Minecraft server in Lisp")

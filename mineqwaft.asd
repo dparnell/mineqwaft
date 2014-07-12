@@ -41,6 +41,8 @@
                                   ((:module raknet
                                             :components
                                             ((:file "package")
+                                             (:file "config")
+                                             (:file "packets")
                                              (:file "raknet"))
                                             :serial t)
                                    (:module server

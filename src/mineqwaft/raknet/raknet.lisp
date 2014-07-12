@@ -23,34 +23,26 @@
 ;;;; DEALINGS IN THE SOFTWARE.
 ;;;;
 
-(defpackage :mineqwaft-asd
-  (:use :cl :asdf))
+(in-package :raknet)
 
-(in-package :mineqwaft-asd)
+(defparameter *max-buffer-size* 65507)
 
-(defsystem mineqwaft
-  :name "mineqwaft"
-  :author "Daniel Parnell <me@danielparnell.com>"
-  :version "0.0"
-  :license "MIT"
-  :description "A Minecraft server written in lisp"
-  :components ((:module :src
-                        :components
-                        ((:module mineqwaft
-                                  :components
-                                  ((:module raknet
-                                            :components
-                                            ((:file "package")
-                                             (:file "raknet"))
-                                            :serial t)
-                                   (:module server
-                                            :components
-                                            ((:file "package")
-                                             (:file "server"))
-                                            :serial t)
-                                   (:file "package")
-                                   (:file "main"))
-                                  :serial t))))
-  :depends-on (
-               :bordeaux-threads
-               :usocket))
+(defvar *send-buffer*
+  (make-array *max-buffer-size* :element-type '(unsigned-byte 8) :initial-element 0))
+
+(defvar *receive-buffer*
+  (make-array *max-buffer-size* :element-type '(unsigned-byte 8) :initial-element 0))
+
+(defun process-packet (socket buffer size src-host src-port)
+  (print (format t "Got packet from ~A on port ~A containing ~A bytes" src-host src-port size)))
+
+(defun server (socket)
+  (multiple-value-bind (buffer size host port)
+      (usocket:socket-receive socket *receive-buffer* *max-buffer-size*)
+    (process-packet socket buffer size host port))
+  (server socket))
+
+(defun serve (interface port)
+  (server (usocket:socket-connect nil nil :protocol :datagram
+                                  :local-host interface
+                                  :local-port port)))

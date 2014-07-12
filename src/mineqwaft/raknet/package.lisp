@@ -23,34 +23,17 @@
 ;;;; DEALINGS IN THE SOFTWARE.
 ;;;;
 
-(defpackage :mineqwaft-asd
-  (:use :cl :asdf))
+(in-package :cl-user)
 
-(in-package :mineqwaft-asd)
+;;;
+;;; Public Interface:
+;;;
 
-(defsystem mineqwaft
-  :name "mineqwaft"
-  :author "Daniel Parnell <me@danielparnell.com>"
-  :version "0.0"
-  :license "MIT"
-  :description "A Minecraft server written in lisp"
-  :components ((:module :src
-                        :components
-                        ((:module mineqwaft
-                                  :components
-                                  ((:module raknet
-                                            :components
-                                            ((:file "package")
-                                             (:file "raknet"))
-                                            :serial t)
-                                   (:module server
-                                            :components
-                                            ((:file "package")
-                                             (:file "server"))
-                                            :serial t)
-                                   (:file "package")
-                                   (:file "main"))
-                                  :serial t))))
-  :depends-on (
-               :bordeaux-threads
-               :usocket))
+(defpackage :raknet
+  (:use :cl :usocket)
+  (:export
+
+   ;; raknet.lisp
+   :serve
+
+   ))

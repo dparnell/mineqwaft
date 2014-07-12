@@ -31,7 +31,7 @@
 
 (defpackage :mineqwaft-server
   (:nicknames :mineq-server)
-  (:use :cl :usocket)
+  (:use :cl :usocket :raknet)
   (:export
 
    ;; server.lisp

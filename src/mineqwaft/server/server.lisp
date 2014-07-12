@@ -26,4 +26,5 @@
 (in-package :mineqwaft-server)
 
 (defun start (interface port)
-  (print (format t "Listening on ~A:~D" interface port)))
+  (print (format t "Listening on ~A:~D" interface port))
+  (raknet:serve interface port))

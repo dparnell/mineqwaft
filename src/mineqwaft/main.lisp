@@ -26,4 +26,4 @@
 (in-package :mineqwaft)
 
 (defun main ()
-  (mineqwaft-server:start "0.0.0.0" 9876))
+  (mineqwaft-server:start "0.0.0.0" 19132))

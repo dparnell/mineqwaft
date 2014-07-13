@@ -33,6 +33,10 @@
   (:use :cl :usocket)
   (:export
 
+   ;; packets.lisp
+   :add-packet-handler
+   :handle-packet
+
    ;; raknet.lisp
    :serve
 

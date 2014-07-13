@@ -27,12 +27,19 @@
 
 (defparameter *max-buffer-size* usocket:+max-datagram-packet-size+)
 
+(defvar *send-buffer*
+  (make-array *max-buffer-size* :element-type '(unsigned-byte 8) :initial-element 0))
+
 (defvar *receive-buffer*
   (make-array *max-buffer-size* :element-type '(unsigned-byte 8) :initial-element 0))
 
 (defun process-packet (socket buffer size src-host src-port)
-  (let ((packet (make-array size :element-type '(unsigned-byte 8) :displaced-to buffer)))
-    (handle-packet src-host src-port packet)))
+  (let* ((packet (make-array size :element-type '(unsigned-byte 8) :displaced-to buffer))
+         (reply (handle-packet src-host src-port packet)))
+    (if reply (progn
+                (print (format t "Sending reply: ~A" reply))
+                (replace *send-buffer* reply)
+                (usocket:socket-send socket *send-buffer* (length reply) :host src-host :port src-port)))))
 
 (defun server (socket)
   (multiple-value-bind (buffer size host port)

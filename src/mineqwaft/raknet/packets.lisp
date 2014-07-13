@@ -26,11 +26,16 @@
 (in-package :raknet)
 
 (defun unknown-packet (src-host src-port packet)
-  (print (format t "Got unknown packet from ~A on port ~A of type ~A bytes: ~A" src-host src-port (aref packet 0) packet)))
+  (print (format t "Got unknown packet from ~A on port ~A of type ~A bytes: ~A" src-host src-port (aref packet 0) packet))
+  nil)
 
 ;; an array of functions for handling packets
 (defvar *packet-handlers*
   (make-array 256 :initial-element 'unknown-packet))
+
+;; add a packet handler for a given packet type
+(defun add-packet-handler (id fn)
+  (setf (aref *packet-handlers* id) fn))
 
 (defun handle-packet (src-host src-port packet)
   (funcall (aref *packet-handlers* (aref packet 0)) src-host src-port packet))
@@ -40,3 +45,15 @@
 
 (defparameter +server-id+
   #(#x00 #x00 #x00 #x00 #x37 #x2c #xdc #x9e))
+
+;; ID_CONNECTED_PING_OPEN_CONNECTIONS
+(add-packet-handler #x01 (lambda (src-host src-port packet)
+                           (print (format t "Got packet ~A" packet))
+                           ;; build a response to the ID_UNCONNECTED_PING_OPEN_CONNECTIONS
+                           (concatenate 'vector
+                                        #( #x1c )
+                                        (subseq packet 1 9)
+                                        +server-id+
+                                        +magic+
+                                        (arnesi:string-to-octets "MCCPP;MINECON;" :utf8)
+                                        (arnesi:string-to-octets *server-name* :utf8))))

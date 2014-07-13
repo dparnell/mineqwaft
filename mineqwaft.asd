@@ -54,5 +54,6 @@
                                    (:file "main"))
                                   :serial t))))
   :depends-on (
+               :arnesi
                :bordeaux-threads
                :usocket))

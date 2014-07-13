@@ -34,6 +34,7 @@ quicklisp-setup := build/scripts/quicklisp-setup.lisp
 prop :=  build/scripts/property.lisp
 nop := build/scripts/nop.lisp
 load :=  build/scripts/load.lisp
+shell :=  build/scripts/shell.lisp
 
 # Select which driver to run (load by default).
 driver := ${load}
@@ -73,7 +74,7 @@ load:
 
 .PHONY: shell
 shell:
-	$(MAKE) driver="${nop}" new
+	$(MAKE) driver="${shell}" new
 
 .PHONY: clean
 clean:

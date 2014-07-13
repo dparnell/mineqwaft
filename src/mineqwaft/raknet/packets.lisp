@@ -49,6 +49,10 @@
 (defparameter +server-id+
   #(#x00 #x00 #x00 #x00 #x37 #x2c #xdc #x9e))
 
+(defun short-value (short)
+  (let ((high (ash short -8)) (low (logand short 255)))
+        (list high low )))
+
 ;; ID_CONNECTED_PING_OPEN_CONNECTIONS
 (add-packet-handler #x01 (lambda (src-host src-port packet)
                            ;; build a response to the ID_UNCONNECTED_PING_OPEN_CONNECTIONS
@@ -57,5 +61,5 @@
                                         (subseq packet 1 9)
                                         +server-id+
                                         +magic+
-                                        (arnesi:string-to-octets "MCCPP;Demo;" :utf8)
+                                        (short-value (length *server-name*))
                                         (arnesi:string-to-octets *server-name* :utf8))))

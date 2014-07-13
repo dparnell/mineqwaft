@@ -38,6 +38,9 @@
   (setf (aref *packet-handlers* id) fn))
 
 (defun handle-packet (src-host src-port packet)
+  (print (format t "Got packet ~A" packet))
+  (print (format t " from ~A on port ~A" src-host src-port))
+
   (funcall (aref *packet-handlers* (aref packet 0)) src-host src-port packet))
 
 (defparameter +magic+
@@ -48,12 +51,11 @@
 
 ;; ID_CONNECTED_PING_OPEN_CONNECTIONS
 (add-packet-handler #x01 (lambda (src-host src-port packet)
-                           (print (format t "Got packet ~A" packet))
                            ;; build a response to the ID_UNCONNECTED_PING_OPEN_CONNECTIONS
                            (concatenate 'vector
                                         #( #x1c )
                                         (subseq packet 1 9)
                                         +server-id+
                                         +magic+
-                                        (arnesi:string-to-octets "MCCPP;MINECON;" :utf8)
+                                        (arnesi:string-to-octets "MCCPP;Demo;" :utf8)
                                         (arnesi:string-to-octets *server-name* :utf8))))

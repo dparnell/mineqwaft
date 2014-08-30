@@ -109,7 +109,7 @@
            (offset (cond
                     ((= encapsulation-id #x00) 3)
                     ((= encapsulation-id #x40) 6)
-                    ((= encapsulation-id #x60) 12))))
+                    ((= encapsulation-id #x60) 10))))
 
       (decode-encapsulated-body (subseq data (+ packet-length offset)) (cons (subseq data offset (+ packet-length offset)) acc)))))
 
@@ -121,10 +121,6 @@
   (let ((replies (apply #'concatenate (cons 'vector (remove nil (mapcar (lambda (part)
                                                                           (funcall (aref *encapsulated-packet-handlers* (aref part 0)) src-host src-port part))
                                                                         (split-encapsulated-packet packet)))))))
-
-    (print "-----------------------")
-    (print replies)
-    (print "-----------------------")
 
     (if (= 0 (length replies))
         nil
@@ -167,16 +163,17 @@
                                                      #( #x04 #x3f #x57 #xfe )
                                                      #( #xcd )
                                                      (short-value src-port)
-                                                     #( #xf5 #xff #xff #xf5
-                                                        #xff #xff #xff #xff
-                                                        #xff #xff #xff #xff
-                                                        #xff #xff #xff #xff
-                                                        #xff #xff #xff #xff
-                                                        #xff #xff #xff #xff
-                                                        #xff #xff #xff #xff
-                                                        #xff #xff #xff #xff
-                                                        #xff #xff #xff #xff
-                                                        #xff #xff #xff #xff )
+                                                     #(
+                                                       #x00 #x00 #x04 #xf5 #xff #xff #xf5
+                                                       #x00 #x00 #x04 #xff #xff #xff #xff
+                                                       #x00 #x00 #x04 #xff #xff #xff #xff
+                                                       #x00 #x00 #x04 #xff #xff #xff #xff
+                                                       #x00 #x00 #x04 #xff #xff #xff #xff
+                                                       #x00 #x00 #x04 #xff #xff #xff #xff
+                                                       #x00 #x00 #x04 #xff #xff #xff #xff
+                                                       #x00 #x00 #x04 #xff #xff #xff #xff
+                                                       #x00 #x00 #x04 #xff #xff #xff #xff
+                                                       #x00 #x00 #x04 #xff #xff #xff #xff )
                                                      #( #x00 #x00 )
                                                      (subseq packet 9 17)
                                                      #( #x00 #x00 #x00 #x00 #x04 #x44 #x0b #xa9 ))))

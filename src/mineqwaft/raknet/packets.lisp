@@ -28,6 +28,10 @@
 (defparameter *client-added-callback* nil)
 (defparameter *client-connected-callback* nil)
 
+(defun ignore-packet (src-host src-port packet)
+  (declare (ignore src-host src-port packet))
+  nil)
+
 (defun unknown-packet (src-host src-port packet)
   (print (format t "Got unknown packet from ~A on port ~A of type ~A bytes: ~A" src-host src-port (aref packet 0) packet))
   nil)
@@ -42,7 +46,7 @@
 
 ;; an array of functions for handling packets
 (defvar *encapsulated-packet-handlers*
-  (make-array 256 :initial-element 'unknown-ecapsulated-packet))
+  (make-array 256 :initial-element 'unknown-encapsulated-packet))
 
 ;; add a packet handler for a given packet type
 (defun add-packet-handler (id fn)
@@ -154,6 +158,12 @@
                            (declare (ignore src-host src-port packet))
                            (print "GOT ACK!")
                            nil))
+
+;; PING
+(add-encapsulated-packet-handler #x00 'ignore-packet)
+
+;; PONG
+(add-encapsulated-packet-handler #x03 'ignore-packet)
 
 ;; CLIENT_CONNECT
 (add-encapsulated-packet-handler #x09 (lambda (src-host src-port packet)

@@ -33,14 +33,22 @@
 (defvar *receive-buffer*
   (make-array *max-buffer-size* :element-type '(unsigned-byte 8) :initial-element 0))
 
+(defun send-replies (socket src-host src-port replies)
+  (if replies
+      (let ((reply (car replies)))
+        (print (format nil "Sending reply: ~A" reply))
+        (print (format nil " to host ~A on port ~A" src-host src-port))
+
+        (replace *send-buffer* reply)
+        (usocket:socket-send socket *send-buffer* (length reply) :host src-host :port src-port))
+      (send-replies socket src-host src-port (cdr replies))))
+
 (defun process-packet (socket buffer size src-host src-port)
   (let* ((packet (make-array size :element-type '(unsigned-byte 8) :displaced-to buffer))
          (reply (handle-packet src-host src-port packet)))
-    (if reply (progn
-                ; (print (format t "Sending reply: ~A" reply))
-                ; (print (format t " to host ~A on port ~A" src-host src-port))
-                (replace *send-buffer* reply)
-                (usocket:socket-send socket *send-buffer* (length reply) :host src-host :port src-port)))))
+    (if reply (cond
+                ((listp reply) (send-replies socket src-host src-port reply))
+                (t (send-replies socket src-host src-port (list reply)))))))
 
 (defun server (socket)
   (multiple-value-bind (buffer size host port)

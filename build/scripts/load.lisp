@@ -39,3 +39,5 @@
 (asdf:operate 'asdf:load-op *driver-system*)
 
 (bordeaux-threads:make-thread 'mineqwaft:main :name "Mineqwaft Server")
+
+;; (mineqwaft:main)

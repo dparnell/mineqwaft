@@ -35,10 +35,9 @@
 
    ;; packets.lisp
    :*client-added-callback*
+   :*client-connected-callback*
    :add-packet-handler
    :handle-packet
 
    ;; raknet.lisp
-   :serve
-
-   ))
+   :serve))

@@ -39,8 +39,12 @@
 (defun client-added (host port id)
   (add-client (make-instance 'client :host host :port port :id id)))
 
+(defun client-connected (host port)
+  (format t "Client connected ~A ~A" host port))
+
 (defun start (interface port)
   (setf raknet:*client-added-callback* 'client-added)
+  (setf raknet:*client-connected-callback* 'client-connected)
 
   (print (format t "Listening on ~A:~D" interface port))
   (raknet:serve interface port))

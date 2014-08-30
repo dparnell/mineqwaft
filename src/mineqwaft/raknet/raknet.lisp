@@ -33,10 +33,14 @@
 (defvar *receive-buffer*
   (make-array *max-buffer-size* :element-type '(unsigned-byte 8) :initial-element 0))
 
+(defun hex-dump (packet)
+  (loop for v across packet
+     collect (write-to-string v :base 16)))
+
 (defun send-replies (socket src-host src-port replies)
   (if replies
       (let ((reply (car replies)))
-        (print (format nil "Sending reply: ~A" reply))
+        (print (format nil "Sending reply: ~A" (hex-dump reply)))
         (print (format nil " to host ~A on port ~A" src-host src-port))
 
         (replace *send-buffer* reply)

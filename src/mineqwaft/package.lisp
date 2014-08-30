@@ -36,6 +36,4 @@
   (:export
 
    ;; main.lisp
-   :main
-
-   ))
+   :main))

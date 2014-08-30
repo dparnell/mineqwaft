@@ -25,6 +25,8 @@
 
 (in-package :raknet)
 
+(defparameter *client-added-callback* nil)
+
 (defun unknown-packet (src-host src-port packet)
   (print (format t "Got unknown packet from ~A on port ~A of type ~A bytes: ~A" src-host src-port (aref packet 0) packet))
   nil)
@@ -38,8 +40,8 @@
   (setf (aref *packet-handlers* id) fn))
 
 (defun handle-packet (src-host src-port packet)
-  (print (format t "Got packet ~A" packet))
-  (print (format t " from ~A on port ~A" src-host src-port))
+;  (print (format t "Got packet ~A" packet))
+;  (print (format t " from ~A on port ~A" src-host src-port))
 
   (funcall (aref *packet-handlers* (aref packet 0)) src-host src-port packet))
 
@@ -55,7 +57,6 @@
 
 ;; ID_CONNECTED_PING_OPEN_CONNECTIONS
 (add-packet-handler #x01 (lambda (src-host src-port packet)
-                           ;; build a response to the ID_UNCONNECTED_PING_OPEN_CONNECTIONS
                            (concatenate 'vector
                                         #( #x1c )
                                         (subseq packet 1 9)
@@ -63,3 +64,44 @@
                                         +magic+
                                         (short-value (length *server-name*))
                                         (arnesi:string-to-octets *server-name* :utf8))))
+
+;; ID_OPEN_CONNECTION_REQUEST_1
+(add-packet-handler #x05 (lambda (src-host src-port packet)
+                           (concatenate 'vector
+                                        #( #x06 )
+                                        +magic+
+                                        +server-id+
+                                        #( #x00 )
+                                        (short-value 1447))))
+
+;; ID_OPEN_CONNECTION_REQUEST_2
+(add-packet-handler #x07 (lambda (src-host src-port packet)
+                           (if *client-added-callback* (funcall *client-added-callback* src-host src-port (subseq packet 25 33)))
+
+                           (concatenate 'vector
+                                        #( #x08 )
+                                        +magic+
+                                        +server-id+
+                                        (short-value src-port)
+                                        (short-value 1464)
+                                        #( #x00 ))))
+
+(defun handle-encapsulated-packet (src-host src-port packet)
+  nil)
+
+(add-packet-handler #x80 'handle-encapsulated-packet)
+(add-packet-handler #x81 'handle-encapsulated-packet)
+(add-packet-handler #x82 'handle-encapsulated-packet)
+(add-packet-handler #x83 'handle-encapsulated-packet)
+(add-packet-handler #x84 'handle-encapsulated-packet)
+(add-packet-handler #x85 'handle-encapsulated-packet)
+(add-packet-handler #x86 'handle-encapsulated-packet)
+(add-packet-handler #x87 'handle-encapsulated-packet)
+(add-packet-handler #x88 'handle-encapsulated-packet)
+(add-packet-handler #x89 'handle-encapsulated-packet)
+(add-packet-handler #x8A 'handle-encapsulated-packet)
+(add-packet-handler #x8B 'handle-encapsulated-packet)
+(add-packet-handler #x8C 'handle-encapsulated-packet)
+(add-packet-handler #x8D 'handle-encapsulated-packet)
+(add-packet-handler #x8E 'handle-encapsulated-packet)
+(add-packet-handler #x8F 'handle-encapsulated-packet)

@@ -34,6 +34,7 @@
   (:export
 
    ;; packets.lisp
+   :*client-added-callback*
    :add-packet-handler
    :handle-packet
 

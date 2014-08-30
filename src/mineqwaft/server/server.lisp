@@ -25,6 +25,22 @@
 
 (in-package :mineqwaft-server)
 
+(defvar *clients* nil)
+
+(defun add-client (client)
+  (setf *clients* (cons client *clients*)))
+
+(defun remove-client (client)
+  :ok)
+
+(defun client-by-id (id)
+  nil)
+
+(defun client-added (host port id)
+  (add-client (make-instance 'client :host host :port port :id id)))
+
 (defun start (interface port)
+  (setf raknet:*client-added-callback* 'client-added)
+
   (print (format t "Listening on ~A:~D" interface port))
   (raknet:serve interface port))

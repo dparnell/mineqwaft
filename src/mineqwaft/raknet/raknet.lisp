@@ -37,8 +37,8 @@
   (let* ((packet (make-array size :element-type '(unsigned-byte 8) :displaced-to buffer))
          (reply (handle-packet src-host src-port packet)))
     (if reply (progn
-                (print (format t "Sending reply: ~A" reply))
-                (print (format t " to host ~A on port ~A" src-host src-port))
+                ; (print (format t "Sending reply: ~A" reply))
+                ; (print (format t " to host ~A on port ~A" src-host src-port))
                 (replace *send-buffer* reply)
                 (usocket:socket-send socket *send-buffer* (length reply) :host src-host :port src-port)))))
 

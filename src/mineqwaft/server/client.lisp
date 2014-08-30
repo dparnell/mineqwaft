@@ -1,4 +1,4 @@
-;;;; Mineqwaft - A Minecraft server in Lisp
+;;;; Mineqwaft - a Minecraft server in lisp
 ;;;;
 ;;;; Copyright (c) 2014, Daniel Parnell <me@danielparnell.com>
 ;;;;
@@ -23,19 +23,12 @@
 ;;;; DEALINGS IN THE SOFTWARE.
 ;;;;
 
-(defvar *driver-system* :mineqwaft)
+(in-package :mineqwaft-server)
 
-(eval-when (:compile-toplevel :load-toplevel :execute)
-  (when (find-package :swank)
-    (pushnew :blt-debug *features*)))
-
-#-quicklisp
-(require :asdf)
-
-;; Load and run main:
-#+quicklisp
-(ql:quickload *driver-system* :verbose t)
-#-quicklisp
-(asdf:operate 'asdf:load-op *driver-system*)
-
-(bordeaux-threads:make-thread 'mineqwaft:main :name "Mineqwaft Server")
+(defclass client ()
+  ((host :accessor client-host
+         :initarg :host)
+   (port :accessor client-port
+         :initarg :port)
+   (id :accessor client-id
+       :initarg :id)))

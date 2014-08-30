@@ -48,6 +48,7 @@
                                    (:module server
                                             :components
                                             ((:file "package")
+                                             (:file "client")
                                              (:file "server"))
                                             :serial t)
                                    (:file "package")

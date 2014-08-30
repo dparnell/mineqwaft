@@ -36,5 +36,13 @@
 
    ;; server.lisp
    :start
+   :*clients*
+   :add-client
+   :remove-client
+   :client-by-id
 
-   ))
+   ;; client.lisp
+   :client
+   :client-host
+   :client-port
+   :client-id))

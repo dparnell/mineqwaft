@@ -45,7 +45,7 @@ args :=
 tempfile := .tmp
 
 # A command which can be used to get an ASDF system property.
-get-property = $(sh build/scripts/run-lisp.sh ${cl} --load ${quicklisp-setup} --eval "(defparameter *driver-system* \"${system}\")" --eval "(defparameter *output-file* \"${tempfile}\")" --eval "(defparameter *output-expression* '$(1))" --load ${prop})
+get-property = $(${cl} --load ${quicklisp-setup} --eval "(defparameter *driver-system* \"${system}\")" --eval "(defparameter *output-file* \"${tempfile}\")" --eval "(defparameter *output-expression* '$(1))" --load ${prop})
 
 # Get ASDF system properties for the specified system.
 define get-properties

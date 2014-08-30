@@ -34,7 +34,6 @@
   (:export
 
    ;; packets.lisp
-   :short-value
    :add-packet-handler
    :handle-packet
 

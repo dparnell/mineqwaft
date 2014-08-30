@@ -25,4 +25,4 @@
 
 (in-package :raknet)
 
-(defvar *server-name* "MCCPP;Demo;Mineqwaft - A Minecraft server in Lisp")
+(defvar *server-name* "MCCPP;MINECON;Mineqwaft - A Minecraft server in Lisp")

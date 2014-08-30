@@ -51,7 +51,7 @@
 
 (defun short-value (short)
   (let ((high (ash short -8)) (low (logand short 255)))
-        (list high low )))
+        (list high low)))
 
 ;; ID_CONNECTED_PING_OPEN_CONNECTIONS
 (add-packet-handler #x01 (lambda (src-host src-port packet)

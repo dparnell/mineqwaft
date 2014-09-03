@@ -70,7 +70,7 @@
 
 (defun short-value (short)
   (let ((high (ash short -8)) (low (logand short 255)))
-        (list high low)))
+    (list high low)))
 
 (defun get-short (data pos)
   (+ (aref data (+ pos 1)) (ash (aref data pos) 8)))
@@ -83,9 +83,9 @@
 
 (defun get-int (data pos)
   (logior (ash (aref data pos) 24)
-         (ash (aref data (+ 1 pos)) 16)
-         (ash (aref data (+ 2 pos)) 8)
-         (aref data (+ 3 pos))))
+          (ash (aref data (+ 1 pos)) 16)
+          (ash (aref data (+ 2 pos)) 8)
+          (aref data (+ 3 pos))))
 
 (defun float-value (f)
   (int-value (ieee-floats:encode-float32 (float f))))
@@ -126,15 +126,15 @@
 
 (defun decode-encapsulated-body (data acc)
   (if (= (length data) 0)
-    acc
-    (let* ((encapsulation-id (aref data 0))
-           (packet-length (/ (get-short data 1) 8))
-           (offset (cond
-                    ((= encapsulation-id #x00) 3)
-                    ((= encapsulation-id #x40) 6)
-                    ((= encapsulation-id #x60) 10))))
+      acc
+      (let* ((encapsulation-id (aref data 0))
+             (packet-length (/ (get-short data 1) 8))
+             (offset (cond
+                       ((= encapsulation-id #x00) 3)
+                       ((= encapsulation-id #x40) 6)
+                       ((= encapsulation-id #x60) 10))))
 
-      (decode-encapsulated-body (subseq data (+ packet-length offset)) (cons (subseq data offset (+ packet-length offset)) acc)))))
+        (decode-encapsulated-body (subseq data (+ packet-length offset)) (cons (subseq data offset (+ packet-length offset)) acc)))))
 
 (defun build-encapsulated-ack-packet (packet)
   (concatenate 'vector
@@ -155,13 +155,13 @@
     (let ((ack (build-encapsulated-ack-packet packet)))
       (if (= 0 (length replies))
           ack
-          (list (concatenate 'vector
-                             #( #x80 )
+          (list ack
+                (concatenate 'vector
+                             #( #x84 )
                              #( #x00 #x00 #x00 )
                              #( #x00 )
                              (short-value (* (length replies) 8))
-                             replies)
-                ack)))))
+                             replies))))))
 
 
 (add-packet-handler #x80 'handle-encapsulated-packet)
@@ -219,28 +219,50 @@
                                         (if *client-connected-callback* (funcall *client-connected-callback* src-host src-port))
                                         nil))
 
-;; LoginPacket
-(add-encapsulated-packet-handler #x82 (lambda (src-host src-port packet)
-                                        (if *client-logged-in-callback*
-                                            (let* ((name-length (get-short packet 2))
-                                                   (name-end (+ 3 name-length))
-                                                   (name-bytes (subseq packet 3 name-end)))
+(defun handle-login-packet (src-host src-port packet)
+  (if *client-logged-in-callback*
+      (let* ((name-length (get-short packet 1))
+             (name-end (+ 3 name-length))
+             (name-bytes (subseq packet 3 name-end)))
 
-                                              (funcall *client-logged-in-callback* src-host src-port (flexi-streams:octets-to-string name-bytes))))
-                                        (list
-                                         ;; send a LoginStatus reply saying everything is OK
-                                         ;; TODO: check the client protocol version is good and return the correct results
-                                         #( #x83 #x00 #x00 #x00 #x00 )
-                                         ;; send a StartGame packet
-                                         (concatenate 'vector
-                                                      #( #x87 )
-                                                      (int-value 0) ;; seed
-                                                      (int-value 0) ;; generator
-                                                      (int-value 0) ;; game mode
-                                                      (int-value 100) ;; entity ID
-                                                      (int-value 0) ;; spawn X
-                                                      (int-value 0) ;; spawn Y
-                                                      (int-value 100) ;; sparn Z
-                                                      (float-value 0) ;; X
-                                                      (float-value 0) ;; Y
-                                                      (float-value 101.68))))) ;; Z
+        (funcall *client-logged-in-callback* src-host src-port (flexi-streams:octets-to-string name-bytes))))
+  (concatenate 'vector
+               ;; send a LoginStatus reply saying everything is OK
+               ;; TODO: check the client protocol version is good and return the correct results
+               #( #x83 #x00 #x00 #x00 #x00 )
+
+               ;; send a StartGame packet
+               (concatenate 'vector
+                            #( #x87 )
+                            (int-value 0) ;; seed
+                            (int-value 0) ;; generator
+                            (int-value 0) ;; game mode
+                            (int-value 100) ;; entity ID
+                            (int-value 0) ;; spawn X
+                            (int-value 0) ;; spawn Y
+                            (int-value 100) ;; sparn Z
+                            (float-value 0) ;; X
+                            (float-value 0) ;; Y
+                            (float-value 101.68)) ;; Z
+
+               ;; send a SetTime Packet
+               (concatenate 'vector
+                            #( #x86 )
+                            (int-value (local-time:timestamp-to-unix (local-time:now)))
+                            #( #x80 ))
+
+
+               ;; send a SetSpawnPosition packet
+               (concatenate 'vector
+                            #( #xAB )
+                            (int-value 0) ;; X
+                            (int-value 0) ;; Z
+                            #( 100 )) ;; Z
+
+               ;; send a SetHealth packet
+               #( #xAA #x14 )))
+
+
+
+;; LoginPacket
+(add-encapsulated-packet-handler #x82 #'handle-login-packet)

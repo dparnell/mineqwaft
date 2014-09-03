@@ -53,7 +53,9 @@
 (defun server (socket)
   (multiple-value-bind (buffer size host port)
       (usocket:socket-receive socket *receive-buffer* *max-buffer-size*)
-    (process-packet socket buffer size host port))
+    (handler-case
+        (process-packet socket buffer size host port)
+      (t (e) (trivial-backtrace:print-backtrace e))))
 
   (server socket))
 

@@ -60,4 +60,6 @@
                :flexi-streams
                :bordeaux-threads
                :usocket
-               :ieee-floats))
+               :ieee-floats
+               :trivial-backtrace
+               :local-time))

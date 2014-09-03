@@ -33,9 +33,13 @@
   (:use :cl :usocket)
   (:export
 
+   ;; utils.lisp
+   :hex-dump
+
    ;; packets.lisp
    :*client-added-callback*
    :*client-connected-callback*
+   :*client-logged-in-callback*
    :add-packet-handler
    :handle-packet
 

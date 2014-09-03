@@ -30,5 +30,5 @@
          :initarg :host)
    (port :accessor client-port
          :initarg :port)
-   (id :accessor client-id
-       :initarg :id)))
+   (id :accessor client-name
+       :initarg :name)))

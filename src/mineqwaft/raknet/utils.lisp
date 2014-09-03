@@ -23,38 +23,8 @@
 ;;;; DEALINGS IN THE SOFTWARE.
 ;;;;
 
-(in-package :mineqwaft-server)
+(in-package :raknet)
 
-(defvar *clients* nil)
-
-(defun add-client (client)
-  (setf *clients* (cons client *clients*)))
-
-(defun remove-client (client)
-  :ok)
-
-(defun find-client (host port)
-  (loop for client in *clients*
-     when (and (equal (client-host client) host) (equal (client-port client) port))
-     return client))
-
-(defun client-added (host port)
-  (add-client (make-instance 'client :host host :port port)))
-
-(defun client-connected (host port)
-  (format t "Client connected ~A ~A~%" host port))
-
-(defun client-logged-in (host port name)
-  (format t "Client logged in ~A ~A - ~A~%" host port name)
-
-  (let ((client (find-client host port)))
-    (if client (setf (client-name client) name))))
-
-(defun start (interface port)
-  (setf raknet:*client-added-callback* 'client-added)
-  (setf raknet:*client-connected-callback* 'client-connected)
-  (setf raknet:*client-logged-in-callback* 'client-logged-in)
-
-  (format t "Listening on ~A:~D~%" interface port)
-
-  (raknet:serve interface port))
+(defun hex-dump (packet)
+  (loop for v across packet
+     collect (write-to-string v :base 16)))

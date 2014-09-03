@@ -25,19 +25,20 @@
 
 (in-package :raknet)
 
-(defparameter *client-added-callback* nil)
-(defparameter *client-connected-callback* nil)
+(defvar *client-added-callback* nil)
+(defvar *client-connected-callback* nil)
+(defvar *client-logged-in-callback* nil)
 
 (defun ignore-packet (src-host src-port packet)
   (declare (ignore src-host src-port packet))
   nil)
 
 (defun unknown-packet (src-host src-port packet)
-  (print (format t "Got unknown packet from ~A on port ~A of type ~A bytes: ~A" src-host src-port (aref packet 0) packet))
+  (format t "Got unknown packet from ~A on port ~A of type ~A~%bytes: ~A~%" src-host src-port (aref packet 0) (hex-dump packet))
   nil)
 
 (defun unknown-encapsulated-packet (src-host src-port packet)
-  (print (format t "Got unknown encapsulated packet from ~A on port ~A of type ~A bytes: ~A" src-host src-port (aref packet 0) packet))
+  (format t "Got unknown encapsulated packet from ~A on port ~A of type ~A~%bytes: ~A~%" src-host src-port (aref packet 0) (hex-dump packet))
   nil)
 
 ;; an array of functions for handling packets
@@ -56,8 +57,8 @@
   (setf (aref *encapsulated-packet-handlers* id) fn))
 
 (defun handle-packet (src-host src-port packet)
-  (print (format nil "Got packet ~A" packet))
-  (print (format nil " from ~A on port ~A" src-host src-port))
+  (format t "Got packet ~A~%" (hex-dump packet))
+  (format t "from ~A on port ~A~%" src-host src-port)
 
   (funcall (aref *packet-handlers* (aref packet 0)) src-host src-port packet))
 
@@ -73,6 +74,24 @@
 
 (defun get-short (data pos)
   (+ (aref data (+ pos 1)) (ash (aref data pos) 8)))
+
+(defun int-value (int32)
+  (list (ash int32 -24)
+        (logand (ash int32 -16) #xff)
+        (logand (ash int32 -8) #xff)
+        (logand int32 #xff)))
+
+(defun get-int (data pos)
+  (logior (ash (aref data pos) 24)
+         (ash (aref data (+ 1 pos)) 16)
+         (ash (aref data (+ 2 pos)) 8)
+         (aref data (+ 3 pos))))
+
+(defun float-value (f)
+  (int-value (ieee-floats:encode-float32 (float f))))
+
+(defun get-float (data pos)
+  (ieee-floats:decode-float32 (get-int data pos)))
 
 ;; ID_CONNECTED_PING_OPEN_CONNECTIONS
 (add-packet-handler #x01 (lambda (src-host src-port packet)
@@ -95,7 +114,7 @@
 
 ;; ID_OPEN_CONNECTION_REQUEST_2
 (add-packet-handler #x07 (lambda (src-host src-port packet)
-                           (if *client-added-callback* (funcall *client-added-callback* src-host src-port (subseq packet 25 33)))
+                           (if *client-added-callback* (funcall *client-added-callback* src-host src-port))
 
                            (concatenate 'vector
                                         #( #x08 )
@@ -117,6 +136,13 @@
 
       (decode-encapsulated-body (subseq data (+ packet-length offset)) (cons (subseq data offset (+ packet-length offset)) acc)))))
 
+(defun build-encapsulated-ack-packet (packet)
+  (concatenate 'vector
+               #( #xC0 )
+               #( #x00 #x01 ) ;; unknown
+               #( #x00 ) ;; aditional packet flag
+               (subseq packet 1 4)))
+
 (defun split-encapsulated-packet (data)
   (nreverse (decode-encapsulated-body (subseq data 4) nil)))
 
@@ -126,14 +152,16 @@
                                                                           (funcall (aref *encapsulated-packet-handlers* (aref part 0)) src-host src-port part))
                                                                         (split-encapsulated-packet packet)))))))
 
-    (if (= 0 (length replies))
-        nil
-        (concatenate 'vector
-                     #( #x80 )
-                     #( #x00 #x00 #x00 )
-                     #( #x00 )
-                     (short-value (* (length replies) 8))
-                     replies))))
+    (let ((ack (build-encapsulated-ack-packet packet)))
+      (if (= 0 (length replies))
+          ack
+          (list (concatenate 'vector
+                             #( #x80 )
+                             #( #x00 #x00 #x00 )
+                             #( #x00 )
+                             (short-value (* (length replies) 8))
+                             replies)
+                ack)))))
 
 
 (add-packet-handler #x80 'handle-encapsulated-packet)
@@ -154,10 +182,7 @@
 (add-packet-handler #x8F 'handle-encapsulated-packet)
 
 ;; ACK
-(add-packet-handler #xC0 (lambda (src-host src-port packet)
-                           (declare (ignore src-host src-port packet))
-                           (print "GOT ACK!")
-                           nil))
+(add-packet-handler #xC0 'ignore-packet)
 
 ;; PING
 (add-encapsulated-packet-handler #x00 'ignore-packet)
@@ -193,3 +218,29 @@
                                         (declare (ignore packet))
                                         (if *client-connected-callback* (funcall *client-connected-callback* src-host src-port))
                                         nil))
+
+;; LoginPacket
+(add-encapsulated-packet-handler #x82 (lambda (src-host src-port packet)
+                                        (if *client-logged-in-callback*
+                                            (let* ((name-length (get-short packet 2))
+                                                   (name-end (+ 3 name-length))
+                                                   (name-bytes (subseq packet 3 name-end)))
+
+                                              (funcall *client-logged-in-callback* src-host src-port (flexi-streams:octets-to-string name-bytes))))
+                                        (list
+                                         ;; send a LoginStatus reply saying everything is OK
+                                         ;; TODO: check the client protocol version is good and return the correct results
+                                         #( #x83 #x00 #x00 #x00 #x00 )
+                                         ;; send a StartGame packet
+                                         (concatenate 'vector
+                                                      #( #x87 )
+                                                      (int-value 0) ;; seed
+                                                      (int-value 0) ;; generator
+                                                      (int-value 0) ;; game mode
+                                                      (int-value 100) ;; entity ID
+                                                      (int-value 0) ;; spawn X
+                                                      (int-value 0) ;; spawn Y
+                                                      (int-value 100) ;; sparn Z
+                                                      (float-value 0) ;; X
+                                                      (float-value 0) ;; Y
+                                                      (float-value 101.68))))) ;; Z

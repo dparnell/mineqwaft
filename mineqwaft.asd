@@ -42,6 +42,7 @@
                                             :components
                                             ((:file "package")
                                              (:file "config")
+                                             (:file "utils")
                                              (:file "packets")
                                              (:file "raknet"))
                                             :serial t)
@@ -56,5 +57,7 @@
                                   :serial t))))
   :depends-on (
                :arnesi
+               :flexi-streams
                :bordeaux-threads
-               :usocket))
+               :usocket
+               :ieee-floats))

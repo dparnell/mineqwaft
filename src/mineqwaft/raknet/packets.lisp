@@ -27,37 +27,25 @@
 
 (defvar *client-added-callback* nil)
 (defvar *client-connected-callback* nil)
-(defvar *client-logged-in-callback* nil)
 
 (defun ignore-packet (src-host src-port packet)
   (declare (ignore src-host src-port packet))
   nil)
 
 (defun unknown-packet (src-host src-port packet)
-  (format t "Got unknown packet from ~A on port ~A of type ~A~%bytes: ~A~%" src-host src-port (aref packet 0) (hex-dump packet))
-  nil)
-
-(defun unknown-encapsulated-packet (src-host src-port packet)
-  (format t "Got unknown encapsulated packet from ~A on port ~A of type ~A~%bytes: ~A~%" src-host src-port (aref packet 0) (hex-dump packet))
+  (format t "Got unknown packet from ~A on port ~A of type ~A~%bytes: ~A~%" src-host src-port (aref packet 0) (raknet-data:hex-dump packet))
   nil)
 
 ;; an array of functions for handling packets
 (defvar *packet-handlers*
   (make-array 256 :initial-element 'unknown-packet))
 
-;; an array of functions for handling packets
-(defvar *encapsulated-packet-handlers*
-  (make-array 256 :initial-element 'unknown-encapsulated-packet))
-
 ;; add a packet handler for a given packet type
 (defun add-packet-handler (id fn)
   (setf (aref *packet-handlers* id) fn))
 
-(defun add-encapsulated-packet-handler (id fn)
-  (setf (aref *encapsulated-packet-handlers* id) fn))
-
 (defun handle-packet (src-host src-port packet)
-  (format t "Got packet ~A~%" (hex-dump packet))
+  (format t "Got packet ~A~%" (raknet-data:hex-dump packet))
   (format t "from ~A on port ~A~%" src-host src-port)
 
   (funcall (aref *packet-handlers* (aref packet 0)) src-host src-port packet))
@@ -93,6 +81,16 @@
 (defun get-float (data pos)
   (ieee-floats:decode-float32 (get-int data pos)))
 
+(defun triad-value (int32)
+  (list (logand int32 #xff)
+        (logand (ash int32 -8) #xff)
+        (logand (ash int32 -16) #xff)))
+
+(defun get-triad (data pos)
+  (logior (aref data pos)
+          (ash (aref data (+ 1 pos)) 8)
+          (ash (aref data (+ 2 pos)) 16)))
+
 ;; ID_CONNECTED_PING_OPEN_CONNECTIONS
 (add-packet-handler #x01 (lambda (src-host src-port packet)
                            (concatenate 'vector
@@ -124,17 +122,99 @@
                                         (short-value 1464)
                                         #( #x00 ))))
 
-(defun decode-encapsulated-body (data acc)
+(defclass encapsulated-packet ()
+  ((reliability :accessor packet-reliability
+                :initarg :reliability
+                :initform 0)
+   (has-split :accessor packet-has-split
+              :initarg :has-split
+              :initform nil)
+   (length :accessor packet-length
+           :initarg :length
+           :initform 0)
+   (message-index :accessor packet-message-index
+                  :initarg :message-index
+                  :initform 0)
+   (order-index :accessor packet-order-index
+                :initarg :order-index
+                :initform 0)
+   (order-channel :accessor packet-order-channel
+                  :initarg :order-channel
+                  :initform 0)
+   (split-count :accessor packet-split-count
+                :initarg :split-count
+                :initform 0)
+   (split-id :accessor packet-split-id
+             :initarg :split-id
+             :initform 0)
+   (body :accessor packet-body
+           :initarg :body
+           :initform nil)
+   (need-ack :accessor packet-need-ack
+             :initarg :need-ack
+             :initform nil)
+   (identifier-ack :accessor packet-identifier-ack
+                   :initarg :identifier-ack
+                   :initform nil)))
+
+(defun decode-encapsulated-body (data acc &key internal)
   (if (= (length data) 0)
       acc
-      (let* ((encapsulation-id (aref data 0))
-             (packet-length (/ (get-short data 1) 8))
-             (offset (cond
-                       ((= encapsulation-id #x00) 3)
-                       ((= encapsulation-id #x40) 6)
-                       ((= encapsulation-id #x60) 10))))
+      (let* ((flags (aref data 0))
+             (reliability (ash (logand #xe0 flags) -5))
+             (has-split (> (logand #x10 flags) 0))
+             (packet-length (if internal
+                                (get-int data 1)
+                                (/ (get-short data 1) 8)))
+             (identifier-ack (if internal
+                                 (get-int data 5)
+                                 nil))
+             (header-length (if internal
+                                9
+                                3))
+             (has-message-index (or (= 2 reliability) (= 3 reliability) (= 4 reliability) (= 6 reliability) (= 7 reliability)))
+             (has-order-index (or (= 1 reliability) (= 3 reliability) (= 4 reliability) (= 7 reliability)))
+             (message-index (if has-message-index
+                                (get-triad data header-length)))
+             (message-index-size (if has-message-index 3 0))
+             (order-index (if has-order-index
+                              (get-triad data (+ header-length message-index-size))
+                              nil))
+             (order-channel (if has-order-index
+                                (aref data (+ header-length message-index-size 3))
+                                nil))
+             (order-index-size (if has-order-index 4 0))
+             (main-header-size (+ header-length message-index-size order-index-size))
+             (split-count (if has-split
+                              (get-int data main-header-size)
+                              0))
+             (split-id (if has-split
+                           (get-short data (+ main-header-size 4))
+                           0))
+             (split-index (if has-split
+                              (get-int data (+ main-header-size 6))
+                              0))
+             (split-header-size (if has-split 10 0))
+             (offset (+ main-header-size split-header-size))
+             (body (subseq data offset (+ packet-length offset)))
+             (packet (make-instance 'encapsulated-packet
+                                    :reliability reliability
+                                    :has-split has-split
+                                    :length packet-length
+                                    :identifier-ack identifier-ack
+                                    :message-index message-index
+                                    :order-index order-index
+                                    :order-channel order-channel
+                                    :split-count split-count
+                                    :split-id split-id
+                                    :split-index split-index
+                                    :body body)))
 
-        (decode-encapsulated-body (subseq data (+ packet-length offset)) (cons (subseq data offset (+ packet-length offset)) acc)))))
+        (decode-encapsulated-body (subseq data (+ packet-length offset)) (cons packet acc)))))
+
+
+(defun split-encapsulated-packet (data &key internal)
+  (nreverse (decode-encapsulated-body (subseq data 4) nil :internal internal)))
 
 (defun build-encapsulated-ack-packet (packet)
   (concatenate 'vector
@@ -143,13 +223,11 @@
                #( #x00 ) ;; aditional packet flag
                (subseq packet 1 4)))
 
-(defun split-encapsulated-packet (data)
-  (nreverse (decode-encapsulated-body (subseq data 4) nil)))
-
-
 (defun handle-encapsulated-packet (src-host src-port packet)
   (let ((replies (apply #'concatenate (cons 'vector (remove nil (mapcar (lambda (part)
-                                                                          (funcall (aref *encapsulated-packet-handlers* (aref part 0)) src-host src-port part))
+                                                                          (let ((ep (make-instance (aref raknet-data:*packet-types* (aref part 0)) :body part)))
+                                                                            (setf (raknet-data:packet-type ep) (raknet-data:get-byte ep))
+                                                                            (raknet-data:handle-data-packet ep src-host src-port)))
                                                                         (split-encapsulated-packet packet)))))))
 
     (let ((ack (build-encapsulated-ack-packet packet)))
@@ -184,85 +262,49 @@
 ;; ACK
 (add-packet-handler #xC0 'ignore-packet)
 
-;; PING
-(add-encapsulated-packet-handler #x00 'ignore-packet)
 
-;; PONG
-(add-encapsulated-packet-handler #x03 'ignore-packet)
+(defclass client-connect-packet (raknet-data:data-packet)
+  ((client-id :accessor client-connect-id)
+   (session :accessor client-connect-session)
+   (unknown :accessor client-connect-unknown)))
 
-;; CLIENT_CONNECT
-(add-encapsulated-packet-handler #x09 (lambda (src-host src-port packet)
-                                        (declare (ignore src-host))
-                                        (concatenate 'vector
-                                                     #( #x10 )
-                                                     #( #x04 #x3f #x57 #xfe )
-                                                     #( #xcd )
-                                                     (short-value src-port)
-                                                     #(
-                                                       #x00 #x00 #x04 #xf5 #xff #xff #xf5
-                                                       #x00 #x00 #x04 #xff #xff #xff #xff
-                                                       #x00 #x00 #x04 #xff #xff #xff #xff
-                                                       #x00 #x00 #x04 #xff #xff #xff #xff
-                                                       #x00 #x00 #x04 #xff #xff #xff #xff
-                                                       #x00 #x00 #x04 #xff #xff #xff #xff
-                                                       #x00 #x00 #x04 #xff #xff #xff #xff
-                                                       #x00 #x00 #x04 #xff #xff #xff #xff
-                                                       #x00 #x00 #x04 #xff #xff #xff #xff
-                                                       #x00 #x00 #x04 #xff #xff #xff #xff )
-                                                     #( #x00 #x00 )
-                                                     (subseq packet 9 17)
-                                                     #( #x00 #x00 #x00 #x00 #x04 #x44 #x0b #xa9 ))))
+(raknet-data:register-packet-type #x09 'client-connect-packet)
+
+(defmethod decode-data-packet ((packet client-connect-packet))
+  (setf (client-connect-id packet) (raknet-data:get-long packet))
+  (setf (client-connect-session packet) (raknet-data:get-long packet))
+  (setf (client-connect-unknown packet) (raknet-data:get-byte packet))
+
+  packet)
+
+(defmethod handle-data-packet ((packet client-connect-packet) src-host src-port)
+  (declare (ignore src-host))
+  (concatenate 'vector
+               #( #x10 )
+               #( #x04 #x3f #x57 #xfe )
+               #( #xcd )
+               (short-value src-port)
+               #(
+                 #x00 #x00 #x04 #xf5 #xff #xff #xf5
+                 #x00 #x00 #x04 #xff #xff #xff #xff
+                 #x00 #x00 #x04 #xff #xff #xff #xff
+                 #x00 #x00 #x04 #xff #xff #xff #xff
+                 #x00 #x00 #x04 #xff #xff #xff #xff
+                 #x00 #x00 #x04 #xff #xff #xff #xff
+                 #x00 #x00 #x04 #xff #xff #xff #xff
+                 #x00 #x00 #x04 #xff #xff #xff #xff
+                 #x00 #x00 #x04 #xff #xff #xff #xff
+                 #x00 #x00 #x04 #xff #xff #xff #xff )
+               #( #x00 #x00 )
+               (subseq packet 9 17)
+               #( #x00 #x00 #x00 #x00 #x04 #x44 #x0b #xa9 )))
 
 ;; CLIENT_HANDSHAKE
-(add-encapsulated-packet-handler #x13 (lambda (src-host src-port packet)
-                                        (declare (ignore packet))
-                                        (if *client-connected-callback* (funcall *client-connected-callback* src-host src-port))
-                                        nil))
-
-(defun handle-login-packet (src-host src-port packet)
-  (if *client-logged-in-callback*
-      (let* ((name-length (get-short packet 1))
-             (name-end (+ 3 name-length))
-             (name-bytes (subseq packet 3 name-end)))
-
-        (funcall *client-logged-in-callback* src-host src-port (flexi-streams:octets-to-string name-bytes))))
-  (concatenate 'vector
-               ;; send a LoginStatus reply saying everything is OK
-               ;; TODO: check the client protocol version is good and return the correct results
-               #( #x83 #x00 #x00 #x00 #x00 )
-
-               ;; send a StartGame packet
-               (concatenate 'vector
-                            #( #x87 )
-                            (int-value 0) ;; seed
-                            (int-value 0) ;; generator
-                            (int-value 0) ;; game mode
-                            (int-value 100) ;; entity ID
-                            (int-value 0) ;; spawn X
-                            (int-value 0) ;; spawn Y
-                            (int-value 100) ;; sparn Z
-                            (float-value 0) ;; X
-                            (float-value 0) ;; Y
-                            (float-value 101.68)) ;; Z
-
-               ;; send a SetTime Packet
-               (concatenate 'vector
-                            #( #x86 )
-                            (int-value (local-time:timestamp-to-unix (local-time:now)))
-                            #( #x80 ))
-
-
-               ;; send a SetSpawnPosition packet
-               (concatenate 'vector
-                            #( #xAB )
-                            (int-value 0) ;; X
-                            (int-value 0) ;; Z
-                            #( 100 )) ;; Z
-
-               ;; send a SetHealth packet
-               #( #xAA #x14 )))
-
+;;(add-encapsulated-packet-handler #x13 (lambda (src-host src-port packet)
+;;                                        (declare (ignore packet))
+;;                                        (if *client-connected-callback* (funcall *client-connected-callback* src-host src-port))
+;;                                        nil))
 
 
 ;; LoginPacket
-(add-encapsulated-packet-handler #x82 #'handle-login-packet)
+;; (add-encapsulated-packet-handler #x82 #'handle-login-packet)

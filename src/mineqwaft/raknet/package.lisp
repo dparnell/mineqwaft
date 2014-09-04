@@ -25,6 +25,23 @@
 
 (in-package :cl-user)
 
+(defpackage :raknet-data
+  (:use :cl)
+  (:export :hex-dump
+           :data-packet
+           :packet-type
+           :get-bytes
+           :get-byte
+           :get-short
+           :get-int
+           :get-long
+           :get-float
+           :get-string
+           :*packet-types*
+           :register-packet-type
+           :*client-logged-in-callback*
+           :handle-data-packet))
+
 ;;;
 ;;; Public Interface:
 ;;;
@@ -39,7 +56,6 @@
    ;; packets.lisp
    :*client-added-callback*
    :*client-connected-callback*
-   :*client-logged-in-callback*
    :add-packet-handler
    :handle-packet
 

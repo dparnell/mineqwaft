@@ -43,7 +43,9 @@
                                             ((:file "package")
                                              (:file "config")
                                              (:file "utils")
+                                             (:file "data-packet")
                                              (:file "packets")
+                                             (:file "login-packet")
                                              (:file "raknet"))
                                             :serial t)
                                    (:module server

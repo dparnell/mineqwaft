@@ -53,7 +53,7 @@
 (defun start (interface port)
   (setf raknet:*client-added-callback* 'client-added)
   (setf raknet:*client-connected-callback* 'client-connected)
-  (setf raknet:*client-logged-in-callback* 'client-logged-in)
+  (setf raknet-data:*client-logged-in-callback* 'client-logged-in)
 
   (format t "Listening on ~A:~D~%" interface port)
 

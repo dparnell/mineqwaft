@@ -36,7 +36,7 @@
 (defun send-replies (socket src-host src-port replies)
   (if replies
       (let ((reply (car replies)))
-        (format t "Sending reply: ~A~%" (hex-dump reply))
+        (format t "Sending reply: ~A~%" (raknet-data:hex-dump reply))
         (format t " to host ~A on port ~A~%" src-host src-port)
 
         (replace *send-buffer* reply)

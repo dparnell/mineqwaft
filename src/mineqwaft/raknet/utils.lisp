@@ -23,7 +23,7 @@
 ;;;; DEALINGS IN THE SOFTWARE.
 ;;;;
 
-(in-package :raknet)
+(in-package :raknet-data)
 
 (defun hex-dump (packet)
   (loop for v across packet

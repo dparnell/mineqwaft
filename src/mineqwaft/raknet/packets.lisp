@@ -291,7 +291,8 @@
 (defclass client-handshake (raknet-data:data-packet) ())
 
 (raknet-data:register-packet-type #x13 'client-handshake)
-
+(defmethod raknet-data:decode-data-packet ((packet client-handshake))
+  packet)
 (defmethod raknet-data:handle-data-packet ((packet client-handshake) src-host src-port)
   (declare (ignore packet))
   (if *client-connected-callback* (funcall *client-connected-callback* src-host src-port))

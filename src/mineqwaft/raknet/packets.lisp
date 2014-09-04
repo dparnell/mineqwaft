@@ -56,18 +56,8 @@
 (defparameter +server-id+
   #(#x00 #x00 #x00 #x00 #x37 #x2c #xdc #x9e))
 
-(defun short-value (short)
-  (let ((high (ash short -8)) (low (logand short 255)))
-    (list high low)))
-
 (defun get-short (data pos)
   (+ (aref data (+ pos 1)) (ash (aref data pos) 8)))
-
-(defun int-value (int32)
-  (list (ash int32 -24)
-        (logand (ash int32 -16) #xff)
-        (logand (ash int32 -8) #xff)
-        (logand int32 #xff)))
 
 (defun get-int (data pos)
   (logior (ash (aref data pos) 24)
@@ -75,16 +65,8 @@
           (ash (aref data (+ 2 pos)) 8)
           (aref data (+ 3 pos))))
 
-(defun float-value (f)
-  (int-value (ieee-floats:encode-float32 (float f))))
-
 (defun get-float (data pos)
   (ieee-floats:decode-float32 (get-int data pos)))
-
-(defun triad-value (int32)
-  (list (logand int32 #xff)
-        (logand (ash int32 -8) #xff)
-        (logand (ash int32 -16) #xff)))
 
 (defun get-triad (data pos)
   (logior (aref data pos)
@@ -98,7 +80,7 @@
                                         (subseq packet 1 9)
                                         +server-id+
                                         +magic+
-                                        (short-value (length *server-name*))
+                                        (raknet-data:short-value (length *server-name*))
                                         (arnesi:string-to-octets *server-name* :utf8))))
 
 ;; ID_OPEN_CONNECTION_REQUEST_1
@@ -108,7 +90,7 @@
                                         +magic+
                                         +server-id+
                                         #( #x00 )
-                                        (short-value 1447))))
+                                        (raknet-data:short-value 1447))))
 
 ;; ID_OPEN_CONNECTION_REQUEST_2
 (add-packet-handler #x07 (lambda (src-host src-port packet)
@@ -118,8 +100,8 @@
                                         #( #x08 )
                                         +magic+
                                         +server-id+
-                                        (short-value src-port)
-                                        (short-value 1464)
+                                        (raknet-data:short-value src-port)
+                                        (raknet-data:short-value 1464)
                                         #( #x00 ))))
 
 (defclass encapsulated-packet ()
@@ -244,7 +226,7 @@
                              #( #x84 )
                              #( #x00 #x00 #x00 )
                              #( #x00 )
-                             (short-value (* (length replies) 8))
+                             (raknet-data:short-value (* (length replies) 8))
                              replies))))))
 
 
@@ -275,20 +257,20 @@
 
 (raknet-data:register-packet-type #x09 'client-connect-packet)
 
-(defmethod decode-data-packet ((packet client-connect-packet))
+(defmethod raknet-data:decode-data-packet ((packet client-connect-packet))
   (setf (client-connect-id packet) (raknet-data:get-long packet))
   (setf (client-connect-session packet) (raknet-data:get-bytes packet 4))
   (setf (client-connect-unknown packet) (raknet-data:get-byte packet))
 
   packet)
 
-(defmethod handle-data-packet ((packet client-connect-packet) src-host src-port)
+(defmethod raknet-data:handle-data-packet ((packet client-connect-packet) src-host src-port)
   (declare (ignore src-host))
   (concatenate 'vector
                #( #x10 )
                #( #x04 #x3f #x57 #xfe )
                #( #xcd )
-               (short-value src-port)
+               (raknet-data:short-value src-port)
                #(
                  #x00 #x00 #x04 #xf5 #xff #xff #xf5
                  #x00 #x00 #x04 #xff #xff #xff #xff
@@ -310,7 +292,7 @@
 
 (raknet-data:register-packet-type #x13 'client-handshake)
 
-(defmethod handle-data-packet ((packet client-handshake) src-host src-port)
+(defmethod raknet-data:handle-data-packet ((packet client-handshake) src-host src-port)
   (declare (ignore packet))
   (if *client-connected-callback* (funcall *client-connected-callback* src-host src-port))
   nil)

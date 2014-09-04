@@ -28,6 +28,11 @@
 (defpackage :raknet-data
   (:use :cl)
   (:export :hex-dump
+           :short-value
+           :int-value
+           :float-value
+           :triad-value
+
            :data-packet
            :packet-type
            :get-bytes
@@ -50,9 +55,6 @@
 (defpackage :raknet
   (:use :cl :usocket)
   (:export
-
-   ;; utils.lisp
-   :hex-dump
 
    ;; packets.lisp
    :*client-added-callback*

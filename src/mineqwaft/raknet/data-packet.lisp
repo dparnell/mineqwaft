@@ -68,12 +68,12 @@
     (flexi-streams:octets-to-string (get-bytes packet length))))
 
 (defmethod decode-data-packet ((packet data-packet))
-  (format t "Unhandled encapsulate packet: ~A~%" (hex-dump (packet-body packet)))
+  (format t "Unhandled encapsulated packet: ~A~%" (hex-dump (packet-body packet)))
   packet)
 
 (defmethod handle-data-packet ((packet data-packet) src-host src-port)
   (declare (ignore src-host src-port))
-  packet)
+  nil)
 
 (defclass ignored-data-packet (data-packet) ())
 

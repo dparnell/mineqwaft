@@ -147,6 +147,9 @@
    (split-id :accessor packet-split-id
              :initarg :split-id
              :initform 0)
+   (split-index :accessor packet-split-index
+             :initarg :split-index
+             :initform 0)
    (body :accessor packet-body
            :initarg :body
            :initform nil)
@@ -225,8 +228,11 @@
 
 (defun handle-encapsulated-packet (src-host src-port packet)
   (let ((replies (apply #'concatenate (cons 'vector (remove nil (mapcar (lambda (part)
-                                                                          (let ((ep (make-instance (aref raknet-data:*packet-types* (aref part 0)) :body part)))
+                                                                          (let* ((body (packet-body part))
+                                                                                 (ep (make-instance (aref raknet-data:*packet-types* (aref body 0)) :body body)))
+
                                                                             (setf (raknet-data:packet-type ep) (raknet-data:get-byte ep))
+                                                                            (raknet-data:decode-data-packet ep)
                                                                             (raknet-data:handle-data-packet ep src-host src-port)))
                                                                         (split-encapsulated-packet packet)))))))
 
@@ -262,7 +268,6 @@
 ;; ACK
 (add-packet-handler #xC0 'ignore-packet)
 
-
 (defclass client-connect-packet (raknet-data:data-packet)
   ((client-id :accessor client-connect-id)
    (session :accessor client-connect-session)
@@ -272,7 +277,7 @@
 
 (defmethod decode-data-packet ((packet client-connect-packet))
   (setf (client-connect-id packet) (raknet-data:get-long packet))
-  (setf (client-connect-session packet) (raknet-data:get-long packet))
+  (setf (client-connect-session packet) (raknet-data:get-bytes packet 4))
   (setf (client-connect-unknown packet) (raknet-data:get-byte packet))
 
   packet)
@@ -296,15 +301,16 @@
                  #x00 #x00 #x04 #xff #xff #xff #xff
                  #x00 #x00 #x04 #xff #xff #xff #xff )
                #( #x00 #x00 )
-               (subseq packet 9 17)
+               (client-connect-session packet)
                #( #x00 #x00 #x00 #x00 #x04 #x44 #x0b #xa9 )))
 
 ;; CLIENT_HANDSHAKE
-;;(add-encapsulated-packet-handler #x13 (lambda (src-host src-port packet)
-;;                                        (declare (ignore packet))
-;;                                        (if *client-connected-callback* (funcall *client-connected-callback* src-host src-port))
-;;                                        nil))
 
+(defclass client-handshake (raknet-data:data-packet) ())
 
-;; LoginPacket
-;; (add-encapsulated-packet-handler #x82 #'handle-login-packet)
+(raknet-data:register-packet-type #x13 'client-handshake)
+
+(defmethod handle-data-packet ((packet client-handshake) src-host src-port)
+  (declare (ignore packet))
+  (if *client-connected-callback* (funcall *client-connected-callback* src-host src-port))
+  nil)

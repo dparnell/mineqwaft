@@ -40,6 +40,7 @@
            :*packet-types*
            :register-packet-type
            :*client-logged-in-callback*
+           :decode-data-packet
            :handle-data-packet))
 
 ;;;

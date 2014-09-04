@@ -65,9 +65,6 @@
           (ash (aref data (+ 2 pos)) 8)
           (aref data (+ 3 pos))))
 
-(defun get-float (data pos)
-  (ieee-floats:decode-float32 (get-int data pos)))
-
 (defun get-triad (data pos)
   (logior (aref data pos)
           (ash (aref data (+ 1 pos)) 8)

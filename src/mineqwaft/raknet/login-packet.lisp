@@ -71,7 +71,7 @@
                ;; send a SetTime Packet
                (concatenate 'vector
                             #( #x86 )
-                            (int-value (local-time:timestamp-to-unix (local-time:now)))
+                            (int-value 0) ;; DAY TIME
                             #( #x80 ))
 
 

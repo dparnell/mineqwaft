@@ -38,7 +38,12 @@
                         :components
                         ((:module mineqwaft
                                   :components
-                                  ((:module raknet
+                                  ((:module nbt
+                                            :components
+                                            ((:file "package")
+                                             (:file "nbt"))
+                                             :serial t)
+                                   (:module raknet
                                             :components
                                             ((:file "package")
                                              (:file "config")
@@ -64,4 +69,6 @@
                :usocket
                :ieee-floats
                :trivial-backtrace
-               :local-time))
+               :local-time
+               :chipz
+               :salza2))

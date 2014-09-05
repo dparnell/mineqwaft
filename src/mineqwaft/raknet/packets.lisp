@@ -201,8 +201,8 @@
 (defun build-encapsulated-ack-packet (packet)
   (concatenate 'vector
                #( #xC0 )
-               #( #x00 #x01 ) ;; unknown
-               #( #x00 ) ;; aditional packet flag
+               #( #x00 #x01 ) ;; number of packets to ACK
+               #( #x01 ) ;; aditional packet flag
                (subseq packet 1 4)))
 
 (defun handle-encapsulated-packet (src-host src-port packet)

@@ -59,7 +59,7 @@
                             #( #x87 )
                             (int-value 0) ;; seed
                             (int-value 0) ;; generator
-                            (int-value 0) ;; game mode
+                            (int-value 1) ;; game mode: 0 - survival, 1 - creative
                             (int-value 100) ;; entity ID
                             (int-value 0) ;; spawn X
                             (int-value 0) ;; spawn Y
@@ -80,7 +80,7 @@
                             #( #xAB )
                             (int-value 0) ;; X
                             (int-value 0) ;; Z
-                            #( 100 )) ;; Z
+                            #( 100 )) ;; Y
 
                ;; send a SetHealth packet
                #( #xAA #x14 )))

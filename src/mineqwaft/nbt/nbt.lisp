@@ -48,6 +48,34 @@
         (nreverse bytes)
         bytes) stream)))
 
+(defun put-int (value stream)
+  (let ((bytes (list (logand #xff value)
+                     (logand #xff (ash value -8))
+                     (logand #xff (ash value -16))
+                     (logand #xff (ash value -24)))))
+    (write-sequence (if (= *file-endianess* +big-endian+)
+                        (nreverse bytes)
+                        bytes) stream)))
+
+(defun put-long (value stream)
+  (let ((bytes (list (logand #xff value)
+                     (logand #xff (ash value -8))
+                     (logand #xff (ash value -16))
+                     (logand #xff (ash value -24))
+                     (logand #xff (ash value -32))
+                     (logand #xff (ash value -40))
+                     (logand #xff (ash value -48))
+                     (logand #xff (ash value -56)))))
+    (write-sequence (if (= *file-endianess* +big-endian+)
+                        (nreverse bytes)
+                        bytes) stream)))
+
+(defun put-float (value stream)
+  (put-int (ieee-floats:encode-float32 (float value)) stream))
+
+(defun put-double (value stream)
+  (put-long (ieee-floats:encode-float64 (float value)) stream))
+
 (defclass tag () ())
 
 (defmethod write-tag ((tag tag) stream)
@@ -85,3 +113,31 @@
   (write-byte +tag-short+ stream)
   (call-next-method)
   (put-short (tag-value tag) stream))
+
+(defclass int-tag (named-tag) ())
+
+(defmethod write-tag ((tag int-tag) stream)
+  (write-byte +tag-int+ stream)
+  (call-next-method)
+  (put-int (tag-value tag) stream))
+
+(defclass long-tag (named-tag) ())
+
+(defmethod write-tag ((tag long-tag) stream)
+  (write-byte +tag-long+ stream)
+  (call-next-method)
+  (put-long (tag-value tag) stream))
+
+(defclass float-tag (named-tag) ())
+
+(defmethod write-tag ((tag float-tag) stream)
+  (write-byte +tag-float+ stream)
+  (call-next-method)
+  (put-float (tag-value tag) stream))
+
+(defclass double-tag (named-tag) ())
+
+(defmethod write-tag ((tag double-tag) stream)
+  (write-byte +tag-double+ stream)
+  (call-next-method)
+  (put-double (tag-value tag) stream))

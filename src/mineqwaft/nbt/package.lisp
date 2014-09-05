@@ -33,4 +33,8 @@
            :tag
            :byte-tag
            :short-tag
+           :int-tag
+           :long-tag
+           :float-tag
+           :double-tag
            :write-tag))

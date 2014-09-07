@@ -23,12 +23,18 @@
 ;;;; DEALINGS IN THE SOFTWARE.
 ;;;;
 
-(in-package :mineqwaft-server)
+(in-package :cl-user)
 
-(defclass client ()
-  ((host :accessor client-host
-         :initarg :host)
-   (port :accessor client-port
-         :initarg :port)
-   (id :accessor client-name
-       :initarg :name)))
+;;;
+;;; Public Interface:
+;;;
+
+(defpackage :mineqwaft-pocket
+  (:use :cl :usocket :raknet)
+  (:export
+
+   ;; client.lisp
+   :client
+   :client-host
+   :client-port
+   :client-id))

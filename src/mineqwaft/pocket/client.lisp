@@ -23,41 +23,24 @@
 ;;;; DEALINGS IN THE SOFTWARE.
 ;;;;
 
-(in-package :mineqwaft-server)
+(in-package :mineqwaft-pocket)
 
-(defvar *clients* nil)
-
-(defun add-client (client)
-  (setf *clients* (cons client *clients*)))
-
-(defun remove-client (client)
-  :ok)
-
-(defun find-client (host port)
-  (loop for client in *clients*
-     when (and (equal (client-host client) host) (equal (client-port client) port))
-     return client))
-
-(defun pocket-client-added (socket host port)
-  (declare (ignore socket))
-  (add-client (make-instance 'mineqwaft-pocket:client :host host :port port)))
-
-(defun pocket-client-connected (socket host port)
-  (declare (ignore socket))
-  (format t "Client connected ~A ~A~%" host port))
-
-(defun pocket-client-logged-in (socket host port name)
-  (declare (ignore socket))
-  (format t "Client logged in ~A ~A - ~A~%" host port name)
-
-  (let ((client (find-client host port)))
-    (if client (setf (client-name client) name))))
-
-(defun start (interface port)
-  (setf raknet:*client-added-callback* 'pocket-client-added)
-  (setf raknet:*client-connected-callback* 'pocket-client-connected)
-  (setf raknet-data:*client-logged-in-callback* 'pocket-client-logged-in)
-
-  (format t "Listening on ~A:~D~%" interface port)
-
-  (raknet:serve interface port))
+(defclass client ()
+  ((host :accessor client-host
+         :initarg :host)
+   (port :accessor client-port
+         :initarg :port)
+   (id :accessor client-name
+       :initarg :name)
+   (x :accessor client-x
+      :initarg :x
+      :initform 0)
+   (y :accessor client-y
+      :initarg :y
+      :initform 0)
+   (z :accessor client-z
+      :initarg :z
+      :initform 0)
+   (th :accessor client-th
+      :initarg :th
+      :initform 0)))

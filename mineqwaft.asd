@@ -53,10 +53,13 @@
                                              (:file "login-packet")
                                              (:file "raknet"))
                                             :serial t)
+                                   (:module pocket
+                                            :components
+                                            ((:file "package")
+                                             (:file "client")))
                                    (:module server
                                             :components
                                             ((:file "package")
-                                             (:file "client")
                                              (:file "server"))
                                             :serial t)
                                    (:file "package")

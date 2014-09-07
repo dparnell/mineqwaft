@@ -28,11 +28,12 @@
 (defvar *client-added-callback* nil)
 (defvar *client-connected-callback* nil)
 
-(defun ignore-packet (src-host src-port packet)
-  (declare (ignore src-host src-port packet))
+(defun ignore-packet (socket src-host src-port packet)
+  (declare (ignore socket src-host src-port packet))
   nil)
 
-(defun unknown-packet (src-host src-port packet)
+(defun unknown-packet (socket src-host src-port packet)
+  (declare (ignore socket))
   (format t "Got unknown packet from ~A on port ~A of type ~A~%bytes: ~A~%" src-host src-port (aref packet 0) (raknet-data:hex-dump packet))
   nil)
 
@@ -44,11 +45,11 @@
 (defun add-packet-handler (id fn)
   (setf (aref *packet-handlers* id) fn))
 
-(defun handle-packet (src-host src-port packet)
+(defun handle-packet (socket src-host src-port packet)
   (format t "Got packet ~A~%" (raknet-data:hex-dump packet))
   (format t "from ~A on port ~A~%" src-host src-port)
 
-  (funcall (aref *packet-handlers* (aref packet 0)) src-host src-port packet))
+  (funcall (aref *packet-handlers* (aref packet 0)) socket src-host src-port packet))
 
 (defparameter +magic+
   #(#x00 #xff #xff #x00 #xfe #xfe #xfe #xfe #xfd #xfd #xfd #xfd #x12 #x34 #x56 #x78))
@@ -71,7 +72,8 @@
           (ash (aref data (+ 2 pos)) 16)))
 
 ;; ID_CONNECTED_PING_OPEN_CONNECTIONS
-(add-packet-handler #x01 (lambda (src-host src-port packet)
+(add-packet-handler #x01 (lambda (socket src-host src-port packet)
+                           (declare (ignore socket src-host src-port))
                            (concatenate 'vector
                                         #( #x1c )
                                         (subseq packet 1 9)
@@ -81,7 +83,8 @@
                                         (arnesi:string-to-octets *server-name* :utf8))))
 
 ;; ID_OPEN_CONNECTION_REQUEST_1
-(add-packet-handler #x05 (lambda (src-host src-port packet)
+(add-packet-handler #x05 (lambda (socket src-host src-port packet)
+                           (declare (ignore socket src-host src-port packet))
                            (concatenate 'vector
                                         #( #x06 )
                                         +magic+
@@ -90,8 +93,9 @@
                                         (raknet-data:short-value 1447))))
 
 ;; ID_OPEN_CONNECTION_REQUEST_2
-(add-packet-handler #x07 (lambda (src-host src-port packet)
-                           (if *client-added-callback* (funcall *client-added-callback* src-host src-port))
+(add-packet-handler #x07 (lambda (socket src-host src-port packet)
+                           (declare (ignore packet))
+                           (if *client-added-callback* (funcall *client-added-callback* socket src-host src-port))
 
                            (concatenate 'vector
                                         #( #x08 )
@@ -205,14 +209,14 @@
                #( #x01 ) ;; aditional packet flag
                (subseq packet 1 4)))
 
-(defun handle-encapsulated-packet (src-host src-port packet)
+(defun handle-encapsulated-packet (socket src-host src-port packet)
   (let ((replies (apply #'concatenate (cons 'vector (remove nil (mapcar (lambda (part)
                                                                           (let* ((body (packet-body part))
                                                                                  (ep (make-instance (aref raknet-data:*packet-types* (aref body 0)) :body body)))
 
                                                                             (setf (raknet-data:packet-type ep) (raknet-data:get-byte ep))
                                                                             (raknet-data:decode-data-packet ep)
-                                                                            (raknet-data:handle-data-packet ep src-host src-port)))
+                                                                            (raknet-data:handle-data-packet ep socket src-host src-port)))
                                                                         (split-encapsulated-packet packet)))))))
 
     (let ((ack (build-encapsulated-ack-packet packet)))
@@ -261,8 +265,8 @@
 
   packet)
 
-(defmethod raknet-data:handle-data-packet ((packet client-connect-packet) src-host src-port)
-  (declare (ignore src-host))
+(defmethod raknet-data:handle-data-packet ((packet client-connect-packet) socket src-host src-port)
+  (declare (ignore socket src-host))
   (concatenate 'vector
                #( #x10 )
                #( #x04 #x3f #x57 #xfe )
@@ -290,7 +294,7 @@
 (raknet-data:register-packet-type #x13 'client-handshake)
 (defmethod raknet-data:decode-data-packet ((packet client-handshake))
   packet)
-(defmethod raknet-data:handle-data-packet ((packet client-handshake) src-host src-port)
+(defmethod raknet-data:handle-data-packet ((packet client-handshake) socket src-host src-port)
   (declare (ignore packet))
-  (if *client-connected-callback* (funcall *client-connected-callback* src-host src-port))
+  (if *client-connected-callback* (funcall *client-connected-callback* socket src-host src-port))
   nil)

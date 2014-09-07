@@ -38,13 +38,16 @@
      when (and (equal (client-host client) host) (equal (client-port client) port))
      return client))
 
-(defun client-added (host port)
+(defun client-added (socket host port)
+  (declare (ignore socket))
   (add-client (make-instance 'client :host host :port port)))
 
-(defun client-connected (host port)
+(defun client-connected (socket host port)
+  (declare (ignore socket))
   (format t "Client connected ~A ~A~%" host port))
 
-(defun client-logged-in (host port name)
+(defun client-logged-in (socket host port name)
+  (declare (ignore socket))
   (format t "Client logged in ~A ~A - ~A~%" host port name)
 
   (let ((client (find-client host port)))

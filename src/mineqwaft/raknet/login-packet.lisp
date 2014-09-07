@@ -45,9 +45,9 @@
 
   packet)
 
-(defmethod handle-data-packet ((packet login-packet) src-host src-port)
+(defmethod handle-data-packet ((packet login-packet) socket src-host src-port)
   (if *client-logged-in-callback*
-      (funcall *client-logged-in-callback* src-host src-port (client-connect-username packet)))
+      (funcall *client-logged-in-callback* socket src-host src-port (client-connect-username packet)))
 
   (concatenate 'vector
                ;; send a LoginStatus reply saying everything is OK

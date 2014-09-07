@@ -45,7 +45,7 @@
 
 (defun process-packet (socket buffer size src-host src-port)
   (let* ((packet (make-array size :element-type '(unsigned-byte 8) :displaced-to buffer))
-         (reply (handle-packet src-host src-port packet)))
+         (reply (handle-packet socket src-host src-port packet)))
     (if reply (cond
                 ((listp reply) (send-replies socket src-host src-port reply))
                 (t (send-replies socket src-host src-port (list reply)))))))
@@ -60,6 +60,7 @@
   (server socket))
 
 (defun serve (interface port)
-  (server (usocket:socket-connect nil nil :protocol :datagram
-                                  :local-host interface
-                                  :local-port port)))
+  (let ((socket (usocket:socket-connect nil nil :protocol :datagram
+                                        :local-host interface
+                                        :local-port port)))
+  (server socket)))

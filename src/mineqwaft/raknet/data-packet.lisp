@@ -71,8 +71,8 @@
   (format t "Unhandled encapsulated packet: ~A~%" (hex-dump (packet-body packet)))
   packet)
 
-(defmethod handle-data-packet ((packet data-packet) src-host src-port)
-  (declare (ignore src-host src-port))
+(defmethod handle-data-packet ((packet data-packet) socket src-host src-port)
+  (declare (ignore socket src-host src-port))
   nil)
 
 (defclass ignored-data-packet (data-packet) ())

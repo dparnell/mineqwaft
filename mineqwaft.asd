@@ -56,6 +56,7 @@
                                    (:module pocket
                                             :components
                                             ((:file "package")
+                                             (:file "chunk")
                                              (:file "client")))
                                    (:module server
                                             :components

@@ -23,23 +23,17 @@
 ;;;; DEALINGS IN THE SOFTWARE.
 ;;;;
 
-(in-package :cl-user)
+(in-package :mineqwaft-pocket)
 
-;;;
-;;; Public Interface:
-;;;
+(defclass chunk ()
+  ((blocks :accessor :chunk-blocks)))
 
-(defpackage :mineqwaft-pocket
-  (:use :cl :usocket :raknet)
-  (:export
+(defmethod chunk-set-block ((chunk chunk) x y z b)
+    (setf (aref (chunk-blocks chunk) (+ (logand y 127) (* 128 (+ (logand x 15) (* (logand z 15) 16))))) b))
 
-   ;; chunk.lisp
-   :chunk
-   :chunk-blocks
-   :chunk-set-block
-
-   ;; client.lisp
-   :client
-   :client-host
-   :client-port
-   :client-id))
+(defmethod initialize-instance :after ((instance chunk) &key)
+  (setf (chunk-blocks chunk) (make-array (* 16 16 128) :element-type '(unsigned-byte 8) :initial-element 0))
+  (loop
+     for x from 0 to 15
+     for z from 0 to 15
+     do (chunk-set-block chunk x 0 z 1)))

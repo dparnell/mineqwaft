@@ -23,23 +23,9 @@
 ;;;; DEALINGS IN THE SOFTWARE.
 ;;;;
 
-(in-package :cl-user)
+(in-package :mineqwaft-pocket)
 
-;;;
-;;; Public Interface:
-;;;
-
-(defpackage :mineqwaft-pocket
-  (:use :cl :usocket :raknet)
-  (:export
-
-   ;; chunk.lisp
-   :chunk
-   :chunk-blocks
-   :chunk-set-block
-
-   ;; client.lisp
-   :client
-   :client-host
-   :client-port
-   :client-id))
+(defclass world ()
+  ((chunks :accessor :world-chunks)
+   (players :accessor :world-players
+            :initform nil)))

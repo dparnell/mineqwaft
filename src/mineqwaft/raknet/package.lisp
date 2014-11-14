@@ -28,11 +28,6 @@
 (defpackage :raknet-data
   (:use :cl)
 
-  (:import-from :cl-actors
-                :defactor
-                :send
-                :stop-actor)
-
   (:export :hex-dump
            :short-value
            :int-value
@@ -61,10 +56,6 @@
 (defpackage :raknet
   (:use :cl :usocket)
 
-  (:import-from :cl-actors
-                :defactor
-                :send
-                :stop-actor)
   (:export
 
    ;; packets.lisp

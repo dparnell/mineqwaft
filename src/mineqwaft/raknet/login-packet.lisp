@@ -63,7 +63,7 @@
                             (int-value 100) ;; entity ID
                             (int-value 0) ;; spawn X
                             (int-value 0) ;; spawn Y
-                            (int-value 100) ;; sparn Z
+                            (int-value 100) ;; spawn Z
                             (float-value 0) ;; X
                             (float-value 0) ;; Y
                             (float-value 101.68)) ;; Z

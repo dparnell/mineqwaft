@@ -96,7 +96,7 @@
          (name-length (length name)))
 
     (put-short name-length stream)
-    (write-sequence name)))
+    (write-sequence name stream)))
 
 
 (defclass byte-tag (named-tag) ())

@@ -75,5 +75,4 @@
                :trivial-backtrace
                :local-time
                :chipz
-               :salza2
-               :cl-actors))
+               :salza2))

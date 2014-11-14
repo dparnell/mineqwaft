@@ -26,14 +26,22 @@
 (in-package :mineqwaft-pocket)
 
 (defclass chunk ()
-  ((blocks :accessor :chunk-blocks)))
+  ((x :accessor chunk-x)
+   (z :accessor chunk-z)
+   (blocks :accessor chunk-blocks)))
 
 (defmethod chunk-set-block ((chunk chunk) x y z b)
-    (setf (aref (chunk-blocks chunk) (+ (logand y 127) (* 128 (+ (logand x 15) (* (logand z 15) 16))))) b))
+  (declare (type (unsigned-byte 8) x y z b))
+  (setf (aref (chunk-blocks chunk) (+ (logand y 127) (* 128 (+ (logand x 15) (* (logand z 15) 16))))) b))
 
-(defmethod initialize-instance :after ((instance chunk) &key)
+(defmethod initialize-instance :after ((chunk chunk) &key x z)
+  (setf (chunk-x chunk) x)
+  (setf (chunk-z chunk) z)
   (setf (chunk-blocks chunk) (make-array (* 16 16 128) :element-type '(unsigned-byte 8) :initial-element 0))
+
+  ;; set up some default blocks
   (loop
      for x from 0 to 15
+     for y from 0 to 99
      for z from 0 to 15
-     do (chunk-set-block chunk x 0 z 1)))
+     do (chunk-set-block chunk x y z 1)))

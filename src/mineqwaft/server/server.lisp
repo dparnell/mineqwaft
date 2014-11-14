@@ -35,7 +35,7 @@
 
 (defun find-client (host port)
   (loop for client in *clients*
-     when (and (equal (client-host client) host) (equal (client-port client) port))
+     when (and (equal (mineqwaft-pocket:client-host client) host) (equal (mineqwaft-pocket:client-port client) port))
      return client))
 
 (defun pocket-client-added (socket host port)

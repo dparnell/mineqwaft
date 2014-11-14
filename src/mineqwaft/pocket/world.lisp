@@ -26,6 +26,6 @@
 (in-package :mineqwaft-pocket)
 
 (defclass world ()
-  ((chunks :accessor :world-chunks)
-   (players :accessor :world-players
+  ((chunks :accessor world-chunks)
+   (players :accessor world-players
             :initform nil)))

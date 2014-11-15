@@ -39,6 +39,12 @@
         (logand (ash int32 -8) #xff)
         (logand int32 #xff)))
 
+(defun int-lvalue (int32)
+  (list (logand int32 #xff)
+        (logand (ash int32 -8) #xff)
+        (logand (ash int32 -16) #xff)
+        (ash int32 -24)))
+
 (defun float-value (f)
   (int-value (ieee-floats:encode-float32 (float f))))
 

@@ -31,6 +31,7 @@
   (:export :hex-dump
            :short-value
            :int-value
+           :int-lvalue
            :float-value
            :triad-value
 

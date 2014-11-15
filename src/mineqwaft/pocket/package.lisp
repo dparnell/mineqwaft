@@ -44,6 +44,8 @@
    :chunk-light
    :chunk-set-light
 
+   :encode-chunk
+
    ;; client.lisp
    :client
    :client-host

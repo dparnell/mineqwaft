@@ -26,22 +26,53 @@
 (in-package :mineqwaft-pocket)
 
 (defclass chunk ()
-  ((x :accessor chunk-x)
-   (z :accessor chunk-z)
-   (blocks :accessor chunk-blocks)))
+  ((x :accessor chunk-x :documentation "The x position of the chunk")
+   (z :accessor chunk-z :documentation "The z position of the chunk")
+   (blocks :accessor chunk-blocks :documentation "A 16 x 16 array of unsigned-byte representing the blocks.")
+   (data :accessor chunk-data :documentation "An 16 x 16 x 128 array of unsigned-byte representing the data")
+   (sky-light :accessor chunk-sky-light :documentation "An 16 x 16 x 128 array of unsigned-byte representing the light from the sky")
+   (light :accessor chunk-light :documentation "An 16 x 16 x 128 array of unsigned-byte representing the light from a block")))
+
+(defgeneric chunk-set-block (chunk x y z b))
+(defgeneric chunk-set-data (chunk x y z d))
+(defgeneric chunk-set-sky-light (chunk x y z light))
+(defgeneric chunk-set-block-light (chunk x y z light))
 
 (defmethod chunk-set-block ((chunk chunk) x y z b)
   (declare (type (unsigned-byte 8) x y z b))
-  (setf (aref (chunk-blocks chunk) (+ (logand y 127) (* 128 (+ (logand x 15) (* (logand z 15) 16))))) b))
+  (setf (aref (chunk-blocks chunk) (+ y (* 128 (+ (logand x 15) (* (logand z 15) 16))))) b))
+
+(defmethod chunk-set-data((chunk chunk) x y z d)
+  (declare (type (unsigned-byte 8) x y z d))
+  (if (= (logand y) 0)
+      (setf (ldb (byte 4 0) (aref (chunk-data chunk) (+ (ash y -1) (* 64 (+ (logand x 15) (* (logand z 15) 16)))))) d)
+      (setf (ldb (byte 4 4) (aref (chunk-data chunk) (+ (ash y -1) (* 64 (+ (logand x 15) (* (logand z 15) 16)))))) d)))
+
+(defmethod chunk-set-sky-light((chunk chunk) x y z light)
+  (declare (type (unsigned-byte 8) x y z light))
+  (if (= (logand y) 0)
+      (setf (ldb (byte 4 0) (aref (chunk-sky-light chunk) (+ (ash y -1) (* 64 (+ (logand x 15) (* (logand z 15) 16)))))) light)
+      (setf (ldb (byte 4 4) (aref (chunk-sky-light chunk) (+ (ash y -1) (* 64 (+ (logand x 15) (* (logand z 15) 16)))))) light)))
+
+(defmethod chunk-set-light((chunk chunk) x y z light)
+  (declare (type (unsigned-byte 8) x y z light))
+  (if (= (logand y) 0)
+      (setf (ldb (byte 4 0) (aref (chunk-light chunk) (+ (ash y -1) (* 64 (+ (logand x 15) (* (logand z 15) 16)))))) light)
+      (setf (ldb (byte 4 4) (aref (chunk-light chunk) (+ (ash y -1) (* 64 (+ (logand x 15) (* (logand z 15) 16)))))) light)))
 
 (defmethod initialize-instance :after ((chunk chunk) &key x z)
-  (setf (chunk-x chunk) x)
-  (setf (chunk-z chunk) z)
+  (setf (chunk-x chunk) (or x 0))
+  (setf (chunk-z chunk) (or z 0))
   (setf (chunk-blocks chunk) (make-array (* 16 16 128) :element-type '(unsigned-byte 8) :initial-element 0))
+  (setf (chunk-data chunk) (make-array (* 16 16 128) :element-type '(unsigned-byte 8) :initial-element 0))
+  (setf (chunk-sky-light chunk) (make-array (* 16 16 128) :element-type '(unsigned-byte 8) :initial-element 0))
+  (setf (chunk-light chunk) (make-array (* 16 16 128) :element-type '(unsigned-byte 8) :initial-element 0))
 
   ;; set up some default blocks
   (loop
      for x from 0 to 15
      for y from 0 to 99
      for z from 0 to 15
-     do (chunk-set-block chunk x y z 1)))
+     do
+       (chunk-set-block chunk x y z 1)
+       (if (= y 99) (chunk-set-sky-light x y z 15))))

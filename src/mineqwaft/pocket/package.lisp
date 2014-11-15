@@ -37,6 +37,12 @@
    :chunk
    :chunk-blocks
    :chunk-set-block
+   :chunk-data
+   :chunk-set-data
+   :chunk-sky-light
+   :chunk-set-sky-light
+   :chunk-light
+   :chunk-set-light
 
    ;; client.lisp
    :client

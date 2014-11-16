@@ -45,11 +45,11 @@
 (defun add-packet-handler (id fn)
   (setf (aref *packet-handlers* id) fn))
 
-(defun handle-packet (socket src-host src-port packet)
+(defun handle-packet (src-host src-port packet)
   (format t "Got packet ~A~%" (raknet-data:hex-dump packet))
   (format t "from ~A on port ~A~%" src-host src-port)
 
-  (funcall (aref *packet-handlers* (aref packet 0)) socket src-host src-port packet))
+  (funcall (aref *packet-handlers* (aref packet 0)) *socket* src-host src-port packet))
 
 (defparameter +magic+
   #(#x00 #xff #xff #x00 #xfe #xfe #xfe #xfe #xfd #xfd #xfd #xfd #x12 #x34 #x56 #x78))
@@ -104,44 +104,6 @@
                                         (raknet-data:short-value src-port)
                                         (raknet-data:short-value 1464)
                                         #( #x00 ))))
-
-(defclass encapsulated-packet ()
-  ((reliability :accessor packet-reliability
-                :initarg :reliability
-                :initform 0)
-   (has-split :accessor packet-has-split
-              :initarg :has-split
-              :initform nil)
-   (length :accessor packet-length
-           :initarg :length
-           :initform 0)
-   (message-index :accessor packet-message-index
-                  :initarg :message-index
-                  :initform 0)
-   (order-index :accessor packet-order-index
-                :initarg :order-index
-                :initform 0)
-   (order-channel :accessor packet-order-channel
-                  :initarg :order-channel
-                  :initform 0)
-   (split-count :accessor packet-split-count
-                :initarg :split-count
-                :initform 0)
-   (split-id :accessor packet-split-id
-             :initarg :split-id
-             :initform 0)
-   (split-index :accessor packet-split-index
-             :initarg :split-index
-             :initform 0)
-   (body :accessor packet-body
-           :initarg :body
-           :initform nil)
-   (need-ack :accessor packet-need-ack
-             :initarg :need-ack
-             :initform nil)
-   (identifier-ack :accessor packet-identifier-ack
-                   :initarg :identifier-ack
-                   :initform nil)))
 
 (defun decode-encapsulated-body (data acc &key internal)
   (if (= (length data) 0)

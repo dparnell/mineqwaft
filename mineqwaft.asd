@@ -47,11 +47,13 @@
                                             :components
                                             ((:file "package")
                                              (:file "config")
+                                             (:file "raknet")
                                              (:file "utils")
+                                             (:file "encapsulated-packet")
+                                             (:file "client")
                                              (:file "data-packet")
                                              (:file "packets")
-                                             (:file "login-packet")
-                                             (:file "raknet"))
+                                             (:file "login-packet"))
                                             :serial t)
                                    (:module pocket
                                             :components

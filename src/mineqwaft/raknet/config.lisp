@@ -25,4 +25,5 @@
 
 (in-package :raknet)
 
+(defvar +mtu-size+ 1500)
 (defvar *server-name* "MCCPP;MINECON;Mineqwaft - A Minecraft server in Lisp")

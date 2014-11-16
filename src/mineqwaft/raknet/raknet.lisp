@@ -26,6 +26,7 @@
 (in-package :raknet)
 
 (defparameter *max-buffer-size* usocket:+max-datagram-packet-size+)
+(defvar *socket* nil)
 
 (defvar *send-buffer*
   (make-array *max-buffer-size* :element-type '(unsigned-byte 8) :initial-element 0))
@@ -33,34 +34,33 @@
 (defvar *receive-buffer*
   (make-array *max-buffer-size* :element-type '(unsigned-byte 8) :initial-element 0))
 
-(defun send-replies (socket src-host src-port replies)
+(defun send-replies (src-host src-port replies)
   (if replies
       (let ((reply (car replies)))
         (format t "Sending reply: ~A~%" (raknet-data:hex-dump reply))
         (format t " to host ~A on port ~A~%" src-host src-port)
 
         (replace *send-buffer* reply)
-        (usocket:socket-send socket *send-buffer* (length reply) :host src-host :port src-port)
-        (send-replies socket src-host src-port (cdr replies)))))
+        (usocket:socket-send *socket* *send-buffer* (length reply) :host src-host :port src-port)
+        (send-replies src-host src-port (cdr replies)))))
 
-(defun process-packet (socket buffer size src-host src-port)
+(defun process-packet (buffer size src-host src-port)
   (let* ((packet (make-array size :element-type '(unsigned-byte 8) :displaced-to buffer))
-         (reply (handle-packet socket src-host src-port packet)))
+         (reply (handle-packet src-host src-port packet)))
     (if reply (cond
-                ((listp reply) (send-replies socket src-host src-port reply))
-                (t (send-replies socket src-host src-port (list reply)))))))
+                ((listp reply) (send-replies src-host src-port reply))
+                (t (send-replies src-host src-port (list reply)))))))
 
-(defun server (socket)
-  (multiple-value-bind (buffer size host port)
-      (usocket:socket-receive socket *receive-buffer* *max-buffer-size*)
+(defun server ()
+  (multiple-value-bind (buffer size host port) (usocket:socket-receive *socket* *receive-buffer* *max-buffer-size*)
     (handler-case
-        (process-packet socket buffer size host port)
+        (process-packet buffer size host port)
       (t (e) (trivial-backtrace:print-backtrace e))))
 
-  (server socket))
+  (server))
 
 (defun serve (interface port)
-  (let ((socket (usocket:socket-connect nil nil :protocol :datagram
-                                        :local-host interface
-                                        :local-port port)))
-  (server socket)))
+  (setf *socket* (usocket:socket-connect nil nil :protocol :datagram
+                                         :local-host interface
+                                         :local-port port))
+  (server))

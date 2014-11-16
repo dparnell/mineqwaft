@@ -26,8 +26,8 @@
 (in-package :mineqwaft-pocket)
 
 (defclass chunk ()
-  ((x :accessor chunk-x :documentation "The x position of the chunk")
-   (z :accessor chunk-z :documentation "The z position of the chunk")
+  ((x :accessor chunk-x :initarg :x :documentation "The x position of the chunk")
+   (z :accessor chunk-z :initarg :z :documentation "The z position of the chunk")
    (blocks :accessor chunk-blocks :documentation "A 16 x 16 array of unsigned-byte representing the blocks.")
    (data :accessor chunk-data :documentation "A 16 x 16 x 128 array of unsigned-byte representing the data")
    (sky-light :accessor chunk-sky-light :documentation "A 16 x 16 x 128 array of unsigned-byte representing the light from the sky")
@@ -83,9 +83,7 @@
       (setf (aref colours (+ 1 i)) g)
       (setf (aref colours (+ 2 i)) r)))
 
-(defmethod initialize-instance :after ((chunk chunk) &key x z)
-  (setf (chunk-x chunk) (or x 0))
-  (setf (chunk-z chunk) (or z 0))
+(defmethod initialize-instance :after ((chunk chunk) &key)
   (setf (chunk-blocks chunk) (make-array (* 16 16 128) :element-type '(unsigned-byte 8) :initial-element 0))
   (setf (chunk-data chunk) (make-array (* 16 16 128) :element-type '(unsigned-byte 8) :initial-element 0))
   (setf (chunk-sky-light chunk) (make-array (* 16 16 128) :element-type '(unsigned-byte 8) :initial-element 0))
